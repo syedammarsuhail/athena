@@ -1,0 +1,21 @@
+# Scenario C — Run a shell inside a target pod to trip Falco
+# Demonstrates the security-event branch of the agent
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: falco-trigger
+  namespace: chaos-mesh
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: trigger
+          image: bitnami/kubectl:1.30
+          command:
+            - sh
+            - -c
+            - |
+              POD=$(kubectl -n online-boutique get pod -l app=productcatalogservice -o jsonpath='{.items[0].metadata.name}')
+              kubectl -n online-boutique exec "$POD" -- sh -c "cat /etc/passwd; id"
+      serviceAccountName: chaos-runner

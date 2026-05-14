@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Pull the upstream manifests at a pinned tag. In a real setup, vendor these
+# as a snapshot so upstream changes don't break sync.
+resources:
+  - https://github.com/GoogleCloudPlatform/microservices-demo/release/kubernetes-manifests.yaml?ref=v0.10.2
+
+commonLabels:
+  app.kubernetes.io/part-of: online-boutique
+  managed-by: argocd

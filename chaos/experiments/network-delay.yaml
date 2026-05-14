@@ -1,0 +1,25 @@
+# Scenario B — Latency between cartservice and its dependencies; tests the HITL path
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: cart-to-redis-latency
+  namespace: chaos-mesh
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: [online-boutique]
+    labelSelectors:
+      app: cartservice
+  delay:
+    latency: "300ms"
+    correlation: "25"
+    jitter: "50ms"
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces: [online-boutique]
+      labelSelectors:
+        app: redis-cart
+  duration: "8m"

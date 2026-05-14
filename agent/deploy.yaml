@@ -1,0 +1,315 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-mcp
+  namespace: agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-mcp-reader-and-actor
+rules:
+  - apiGroups: [""]
+    resources: [pods, events, services, nodes, namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [patch]                                      # for cordon
+  - apiGroups: [apps]
+    resources: [deployments, deployments/scale]
+    verbs: [get, list, watch, patch, update]            # for restart + scale
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-mcp
+subjects:
+  - kind: ServiceAccount
+    name: k8s-mcp
+    namespace: agent
+roleRef:
+  kind: ClusterRole
+  name: k8s-mcp-reader-and-actor
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: prom-mcp, namespace: agent }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: prom-mcp } }
+  template:
+    metadata: { labels: { app: prom-mcp } }
+    spec:
+      containers:
+        - name: server
+          image: athena/prom-mcp:latest
+          env: [{ name: PROM_URL, value: "http://kube-prometheus-stack-prometheus.monitoring:9090" }]
+          ports: [{ containerPort: 8080 }]
+          readinessProbe: { httpGet: { path: /healthz, port: 8080 } }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: prom-mcp, namespace: agent }
+spec:
+  selector: { app: prom-mcp }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: loki-mcp, namespace: agent }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: loki-mcp } }
+  template:
+    metadata: { labels: { app: loki-mcp } }
+    spec:
+      containers:
+        - name: server
+          image: athena/loki-mcp:latest
+          env: [{ name: LOKI_URL, value: "http://loki-gateway.monitoring:80" }]
+          ports: [{ containerPort: 8080 }]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: loki-mcp, namespace: agent }
+spec:
+  selector: { app: loki-mcp }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: k8s-mcp, namespace: agent }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: k8s-mcp } }
+  template:
+    metadata: { labels: { app: k8s-mcp } }
+    spec:
+      serviceAccountName: k8s-mcp
+      containers:
+        - name: server
+          image: athena/k8s-mcp:latest
+          env:
+            - { name: REDIS_URL,    value: "redis://redis.agent:6379/0" }
+            - { name: ARGOCD_URL,   value: "https://argocd-server.argocd:443" }
+            - { name: ARGOCD_TOKEN, valueFrom: { secretKeyRef: { name: argocd-api-token, key: token } } }
+          ports: [{ containerPort: 8080 }]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: k8s-mcp, namespace: agent }
+spec:
+  selector: { app: k8s-mcp }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: redis, namespace: agent }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports: [{ containerPort: 6379 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: redis, namespace: agent }
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: agent
+data:
+  tools.rego: |
+    package athena.tools
+
+    default decision := {"allow": false, "reason": "no rule matched (default deny)"}
+
+    decision := {"allow": true, "reason": "restart in allowed namespace"} if {
+        input.tool == "k8s.restart_deployment"
+        allowed_ns[input.args.namespace]
+        not recently_restarted(input.args.namespace, input.args.name)
+    }
+
+    decision := {"allow": false, "reason": "cooldown: deployment was restarted in the last 5 minutes"} if {
+        input.tool == "k8s.restart_deployment"
+        allowed_ns[input.args.namespace]
+        recently_restarted(input.args.namespace, input.args.name)
+    }
+
+    decision := {"allow": true, "reason": sprintf("scale to %d within bounds", [input.args.replicas])} if {
+        input.tool == "k8s.scale_deployment"
+        allowed_ns[input.args.namespace]
+        input.args.replicas <= 20
+        current := default_to_one(input.args.current_replicas)
+        input.args.replicas <= current * 2
+        input.args.replicas >= 1
+    }
+
+    decision := {"allow": false, "reason": sprintf("scale request %d exceeds 2x current (%v) or 20 absolute",
+                                                    [input.args.replicas, input.args.current_replicas])} if {
+        input.tool == "k8s.scale_deployment"
+        allowed_ns[input.args.namespace]
+        not within_scale_bounds(input.args)
+    }
+
+    decision := {"allow": true, "reason": "rollback of a recent change is allowed (HITL still required)"} if {
+        input.tool == "k8s.rollback_argocd_app"
+        input.args.app_name == allowed_app
+        allowed_app := app_allowed[_]
+    }
+
+    decision := {"allow": false, "reason": "rollback of unknown app refused"} if {
+        input.tool == "k8s.rollback_argocd_app"
+        not app_allowed[input.args.app_name]
+    }
+
+    decision := {"allow": true, "reason": "node may be cordoned"} if {
+        input.tool == "k8s.cordon_node"
+        not startswith(input.args.node_name, "ip-control")
+    }
+
+    allowed_ns := {
+        "online-boutique": true,
+        "mlops": true,
+        "agent": true,
+    }
+
+    app_allowed := {"online-boutique-dev", "agent-dev"}
+
+    recently_restarted(ns, name) if { false }
+
+    within_scale_bounds(args) if {
+        args.replicas <= 20
+        current := default_to_one(args.current_replicas)
+        args.replicas <= current * 2
+        args.replicas >= 1
+    }
+
+    default_to_one(x) := x if { x }
+    default_to_one(x) := 1 if { not x }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: opa, namespace: agent }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: opa } }
+  template:
+    metadata: { labels: { app: opa } }
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:0.66.0
+          args: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+          volumeMounts: [{ name: policies, mountPath: /policies }]
+          ports: [{ containerPort: 8181 }]
+      volumes:
+        - name: policies
+          configMap: { name: opa-policies }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: opa, namespace: agent }
+spec:
+  selector: { app: opa }
+  ports: [{ port: 8181, targetPort: 8181 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: athena-agent, namespace: agent }
+spec:
+  replicas: 1  # single instance; NATS queue group handles parallelism via workers
+  selector: { matchLabels: { app: athena-agent } }
+  template:
+    metadata:
+      labels: { app: athena-agent }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+    spec:
+      containers:
+        - name: agent
+          image: athena/agent:latest
+          env:
+            - { name: NATS_URL, value: "nats://nats.mlops:4222" }
+            - { name: OPA_URL,  value: "http://opa.agent:8181" }
+            - { name: PROM_MCP, value: "http://prom-mcp.agent:8080" }
+            - { name: LOKI_MCP, value: "http://loki-mcp.agent:8080" }
+            - { name: K8S_MCP,  value: "http://k8s-mcp.agent:8080" }
+            - { name: REDIS_URL, value: "redis://redis.agent:6379/0" }
+            - { name: SLACK_BOT_API, value: "http://slack-bot.agent:8000" }
+            - name: ANTHROPIC_API_KEY
+              valueFrom: { secretKeyRef: { name: anthropic, key: api-key } }
+          ports: [{ containerPort: 9000, name: metrics }]
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { cpu: 1,    memory: 1Gi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: slack-bot, namespace: agent }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: slack-bot } }
+  template:
+    metadata: { labels: { app: slack-bot } }
+    spec:
+      containers:
+        - name: slack-bot
+          image: athena/agent:latest
+          command: [uvicorn, slack_bot:app, --host, 0.0.0.0, --port, "8000"]
+          env:
+            - { name: REDIS_URL, value: "redis://redis.agent:6379/0" }
+            - name: SLACK_WEBHOOK_URL
+              valueFrom: { secretKeyRef: { name: slack, key: webhook } }
+            - name: SLACK_SIGNING_SECRET
+              valueFrom: { secretKeyRef: { name: slack, key: signing_secret } }
+          ports: [{ containerPort: 8000 }]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: slack-bot, namespace: agent }
+spec:
+  selector: { app: slack-bot }
+  ports: [{ port: 8000, targetPort: 8000 }]

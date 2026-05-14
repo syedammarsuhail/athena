@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlflow
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://community-charts.github.io/helm-charts
+    chart: mlflow
+    targetRevision: 0.7.19
+    helm:
+      values: |
+        backendStore:
+          postgres:
+            enabled: true
+            host: mlflow-postgres-rw.mlops.svc
+            database: mlflow
+            user: mlflow
+            passwordSecretRef:
+              name: mlflow-postgres-app
+              key: password
+        artifactRoot:
+          s3:
+            enabled: true
+            bucket: athena-mlflow-artifacts
+            path: /
+        service: { type: ClusterIP }
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          annotations: { cert-manager.io/cluster-issuer: letsencrypt-prod }
+          hosts: [{ host: mlflow.example.com, paths: [{ path: /, pathType: Prefix }] }]
+          tls: [{ secretName: mlflow-tls, hosts: [mlflow.example.com] }]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

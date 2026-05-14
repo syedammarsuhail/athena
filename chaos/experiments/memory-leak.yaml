@@ -1,0 +1,17 @@
+# Scenario A — Memory leak triggers the agent to restart the deployment
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: cartservice-memory-leak
+  namespace: chaos-mesh
+spec:
+  mode: one                              # exactly one pod
+  selector:
+    namespaces: [online-boutique]
+    labelSelectors:
+      app: cartservice
+  stressors:
+    memory:
+      workers: 1
+      size: 800MB                        # cartservice limit is 1Gi; 800MB pushes us into anomaly territory
+  duration: "10m"

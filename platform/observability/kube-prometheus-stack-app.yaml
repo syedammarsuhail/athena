@@ -1,0 +1,86 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 62.3.0
+    helm:
+      values: |
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+            retentionSize: 40GiB
+            resources:
+              requests: { cpu: 500m, memory: 2Gi }
+              limits:   { cpu: 2,    memory: 4Gi }
+            podMonitorSelectorNilUsesHelmValues: false
+            serviceMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: [ReadWriteOnce]
+                  resources: { requests: { storage: 50Gi } }
+        grafana:
+          adminPassword: CHANGEME-use-external-secret
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+            hosts: [grafana.example.com]
+            tls:
+              - secretName: grafana-tls
+                hosts: [grafana.example.com]
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              url: http://loki-gateway.monitoring.svc:80
+              jsonData:
+                derivedFields:
+                  - datasourceUid: tempo
+                    matcherRegex: "traceID=(\\w+)"
+                    name: TraceID
+                    url: "$${__value.raw}"
+            - name: Tempo
+              type: tempo
+              uid: tempo
+              url: http://tempo.monitoring.svc:3100
+              jsonData:
+                tracesToLogsV2:
+                  datasourceUid: loki
+                  filterByTraceID: true
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              requests: { cpu: 100m, memory: 256Mi }
+          config:
+            route:
+              receiver: 'slack-default'
+              group_by: ['alertname', 'namespace']
+              routes:
+                - matchers: ['severity = critical']
+                  receiver: 'slack-critical'
+                  continue: true
+            receivers:
+              - name: 'slack-default'
+                slack_configs:
+                  - api_url_file: /etc/alertmanager/secrets/slack/url
+                    channel: '#alerts'
+                    send_resolved: true
+              - name: 'slack-critical'
+                slack_configs:
+                  - api_url_file: /etc/alertmanager/secrets/slack/url
+                    channel: '#alerts-critical'
+                    send_resolved: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

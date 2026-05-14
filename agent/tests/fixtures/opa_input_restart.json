@@ -1,0 +1,4 @@
+{
+  "tool": "k8s.restart_deployment",
+  "args": { "namespace": "online-boutique", "name": "cartservice" }
+}

@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: online-boutique-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/CHANGEME/athena.git
+    targetRevision: main
+    path: workloads/online-boutique/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: online-boutique
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ApplyOutOfSyncOnly=true]

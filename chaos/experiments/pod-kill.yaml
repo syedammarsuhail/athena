@@ -1,0 +1,18 @@
+# Routine chaos — runs every hour in dev
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: hourly-pod-kill
+  namespace: chaos-mesh
+spec:
+  schedule: "0 * * * *"
+  type: PodChaos
+  podChaos:
+    action: pod-kill
+    mode: random-max-percent
+    value: "20"                  # at most 20% of matching pods
+    selector:
+      namespaces: [online-boutique]
+      labelSelectors:
+        app.kubernetes.io/part-of: online-boutique
+  historyLimit: 5

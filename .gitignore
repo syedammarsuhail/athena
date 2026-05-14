@@ -1,0 +1,54 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+.terraform.lock.hcl
+crash.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets — should never be in repo
+*.pem
+*.key
+*.crt
+.env
+.env.local
+
+# ML
+mlruns/
+*.pkl
+*.joblib
+ml/notebooks/.ipynb_checkpoints/
+
+# Local docker
+*.tar
+docker-compose.override.yml
+
+# Claude Code local settings
+.claude/

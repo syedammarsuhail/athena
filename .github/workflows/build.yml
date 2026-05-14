@@ -1,0 +1,176 @@
+name: build-and-sign
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agent/**'
+      - 'ml/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'agent/**'
+      - 'ml/**'
+  workflow_dispatch:
+    inputs:
+      component:
+        description: 'Which component to build'
+        required: true
+        type: choice
+        options: [agent, ml-isoforest, ml-drain3, prom-mcp, loki-mcp, k8s-mcp]
+
+permissions:
+  id-token: write   # OIDC for AWS + Cosign keyless
+  contents: write   # needed for image-bump git push
+  packages: write
+  attestations: write
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      components: ${{ steps.set.outputs.components }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: set
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "components=[\"${{ inputs.component }}\"]" >> $GITHUB_OUTPUT
+          else
+            CHANGED=$(git diff --name-only origin/main...HEAD || git diff --name-only HEAD~1)
+            COMPS=()
+            grep -q '^agent/' <<<"$CHANGED" && COMPS+=("agent")
+            grep -q '^ml/training/metric-isoforest/' <<<"$CHANGED" && COMPS+=("ml-isoforest")
+            grep -q '^ml/training/log-drain3/' <<<"$CHANGED" && COMPS+=("ml-drain3")
+            grep -q '^agent/mcp-servers/prom-mcp/' <<<"$CHANGED" && COMPS+=("prom-mcp")
+            grep -q '^agent/mcp-servers/loki-mcp/' <<<"$CHANGED" && COMPS+=("loki-mcp")
+            grep -q '^agent/mcp-servers/k8s-mcp/' <<<"$CHANGED" && COMPS+=("k8s-mcp")
+            if [[ ${#COMPS[@]} -eq 0 ]]; then
+              echo "components=[]" >> $GITHUB_OUTPUT
+            else
+              JSON=$(printf '%s\n' "${COMPS[@]}" | jq -R . | jq -s -c .)
+              echo "components=$JSON" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  build:
+    needs: matrix
+    if: needs.matrix.outputs.components != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: ${{ fromJson(needs.matrix.outputs.components) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: resolve build context
+        id: ctx
+        run: |
+          case "${{ matrix.component }}" in
+            agent)        echo "path=agent"                       >> $GITHUB_OUTPUT ;;
+            ml-isoforest) echo "path=ml/training/metric-isoforest" >> $GITHUB_OUTPUT ;;
+            ml-drain3)    echo "path=ml/training/log-drain3"       >> $GITHUB_OUTPUT ;;
+            prom-mcp)     echo "path=agent/mcp-servers/prom-mcp"   >> $GITHUB_OUTPUT ;;
+            loki-mcp)     echo "path=agent/mcp-servers/loki-mcp"   >> $GITHUB_OUTPUT ;;
+            k8s-mcp)      echo "path=agent/mcp-servers/k8s-mcp"    >> $GITHUB_OUTPUT ;;
+          esac
+          IMAGE="${{ steps.ecr.outputs.registry }}/athena/${{ matrix.component }}"
+          TAG="${GITHUB_SHA::12}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG"     >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: build & push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.ctx.outputs.path }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.ctx.outputs.image }}:${{ steps.ctx.outputs.tag }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: trivy scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ steps.ctx.outputs.image }}:${{ steps.ctx.outputs.tag }}
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-${{ matrix.component }}.sarif'
+        if: github.event_name != 'pull_request'
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && github.event_name != 'pull_request'
+        with: { sarif_file: 'trivy-${{ matrix.component }}.sarif' }
+
+      - name: syft sbom
+        if: github.event_name != 'pull_request'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.ctx.outputs.image }}:${{ steps.ctx.outputs.tag }}
+          format: spdx-json
+          artifact-name: sbom-${{ matrix.component }}.spdx.json
+
+      - uses: sigstore/cosign-installer@v3
+        if: github.event_name != 'pull_request'
+
+      - name: cosign sign (keyless)
+        if: github.event_name != 'pull_request'
+        env: { COSIGN_EXPERIMENTAL: "true" }
+        run: |
+          cosign sign --yes \
+            ${{ steps.ctx.outputs.image }}@${{ steps.build.outputs.digest }}
+
+      - name: cosign attest sbom
+        if: github.event_name != 'pull_request'
+        env: { COSIGN_EXPERIMENTAL: "true" }
+        run: |
+          cosign attest --yes \
+            --predicate sbom-${{ matrix.component }}.spdx.json \
+            --type spdxjson \
+            ${{ steps.ctx.outputs.image }}@${{ steps.build.outputs.digest }}
+
+      - uses: imranismail/setup-kustomize@v2
+        if: github.event_name != 'pull_request'
+
+      - name: bump image tag in kustomization
+        if: github.event_name != 'pull_request'
+        run: |
+          case "${{ matrix.component }}" in
+            agent|prom-mcp|loki-mcp|k8s-mcp) ;;
+            *) echo "No kustomize target for ${{ matrix.component }}, skipping"; exit 0 ;;
+          esac
+
+          git config user.email "ci-bot@github.com"
+          git config user.name "GitHub Actions"
+          git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+
+          cd agent
+          kustomize edit set image \
+            athena/${{ matrix.component }}=${{ steps.ecr.outputs.registry }}/athena/${{ matrix.component }}:${{ steps.ctx.outputs.tag }}
+
+          git add kustomization.yaml
+          git diff --cached --quiet && exit 0
+
+          # rebase handles concurrent builds bumping different images
+          git pull --rebase origin main
+          git commit -m "ci: bump athena/${{ matrix.component }} to ${{ steps.ctx.outputs.tag }} [skip ci]"
+          git push origin main

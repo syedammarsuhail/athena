@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deploy.yaml
+
+# CI updates these image tags via: kustomize edit set image athena/agent=<ecr>:<sha>
+images:
+  - name: athena/agent
+    newName: athena/agent
+    newTag: latest
+  - name: athena/prom-mcp
+    newName: athena/prom-mcp
+    newTag: latest
+  - name: athena/loki-mcp
+    newName: athena/loki-mcp
+    newTag: latest
+  - name: athena/k8s-mcp
+    newName: athena/k8s-mcp
+    newTag: latest

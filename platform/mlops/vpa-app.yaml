@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vpa
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://cowboysysop.github.io/charts
+    chart: vertical-pod-autoscaler
+    targetRevision: 9.8.4
+    helm:
+      values: |
+        updater:
+          extraArgs:
+            - --updater-interval=30m
+        recommender:
+          extraArgs:
+            - --recommender-interval=10m
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+---
+# Apply Off policies so VPA only RECOMMENDS, doesn't restart pods
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: cartservice
+  namespace: online-boutique
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cartservice
+  updatePolicy:
+    updateMode: "Off"
