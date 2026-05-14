@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/syedammarsuhail/athena.git
-    targetRevision: main
+    targetRevision: master
     path: agent
   destination:
     server: https://kubernetes.default.svc

@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/syedammarsuhail/athena.git
-    targetRevision: main
+    targetRevision: master
     path: platform
     directory:
       recurse: true
