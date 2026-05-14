@@ -1,11 +1,11 @@
 module "vpc" {
   source = "../../modules/vpc"
 
-  name                 = "${var.cluster_name}-vpc"
-  cidr                 = "10.0.0.0/16"
-  azs                  = ["us-east-1a", "us-east-1b", "us-east-1c"]
-  single_nat_gateway   = true # cost: dev only
-  cluster_name         = var.cluster_name
+  name               = "${var.cluster_name}-vpc"
+  cidr               = "10.0.0.0/16"
+  azs                = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  single_nat_gateway = true # cost: dev only
+  cluster_name       = var.cluster_name
 }
 
 module "eks" {

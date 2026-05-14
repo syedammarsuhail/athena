@@ -3,8 +3,8 @@ variable "cluster_version" {
   type    = string
   default = "1.30"
 }
-variable "vpc_id"          { type = string }
-variable "subnet_ids"      { type = list(string) }
+variable "vpc_id" { type = string }
+variable "subnet_ids" { type = list(string) }
 
 variable "node_groups" {
   type = map(object({
@@ -123,8 +123,8 @@ resource "aws_eks_addon" "core" {
   depends_on   = [aws_eks_node_group.this]
 }
 
-output "cluster_name"       { value = aws_eks_cluster.this.name }
-output "cluster_endpoint"   { value = aws_eks_cluster.this.endpoint }
-output "cluster_ca"         { value = aws_eks_cluster.this.certificate_authority[0].data }
-output "oidc_provider_arn"  { value = aws_iam_openid_connect_provider.oidc.arn }
-output "oidc_provider_url"  { value = aws_iam_openid_connect_provider.oidc.url }
+output "cluster_name" { value = aws_eks_cluster.this.name }
+output "cluster_endpoint" { value = aws_eks_cluster.this.endpoint }
+output "cluster_ca" { value = aws_eks_cluster.this.certificate_authority[0].data }
+output "oidc_provider_arn" { value = aws_iam_openid_connect_provider.oidc.arn }
+output "oidc_provider_url" { value = aws_iam_openid_connect_provider.oidc.url }
