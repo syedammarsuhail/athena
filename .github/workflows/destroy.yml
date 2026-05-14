@@ -1,0 +1,50 @@
+name: destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Environment to destroy'
+        required: true
+        type: choice
+        options: [dev]
+        default: dev
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.env }}
+    if: inputs.confirm == 'destroy'
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/${{ inputs.env }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      - name: terraform init
+        run: terraform init
+
+      - name: drain argo cd apps
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name athena-${{ inputs.env }} || true
+          kubectl delete applications --all -n argocd --ignore-not-found=true || true
+          kubectl delete ns argocd agent monitoring mlops online-boutique opencost kyverno falco --ignore-not-found=true || true
+
+      - name: terraform destroy
+        run: terraform destroy -auto-approve
