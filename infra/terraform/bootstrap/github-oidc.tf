@@ -1,8 +1,14 @@
 # Run this once, separately. Outputs the IAM Role ARN for GitHub Actions.
 
-variable "github_org"  { type = string }
-variable "github_repo" { type = string  default = "athena" }
-variable "region"      { type = string  default = "us-east-1" }
+variable "github_org" { type = string }
+variable "github_repo" {
+  type    = string
+  default = "athena"
+}
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
 
 provider "aws" { region = var.region }
 

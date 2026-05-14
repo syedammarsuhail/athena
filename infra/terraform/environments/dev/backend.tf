@@ -1,13 +1,9 @@
 terraform {
   required_version = ">= 1.7"
 
-  backend "s3" {
-    bucket         = "athena-tf-state-CHANGEME" # set to your bucket
-    key            = "environments/dev/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "athena-tf-locks"
-    encrypt        = true
-  }
+  # Using local state for dev. To migrate to S3:
+  # 1. Create bucket + DynamoDB table
+  # 2. Re-add backend "s3" block and run terraform init -migrate-state
 
   required_providers {
     aws        = { source = "hashicorp/aws", version = "~> 5.60" }
