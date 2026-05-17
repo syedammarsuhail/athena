@@ -4,8 +4,10 @@ kind: Kustomization
 # Pull the upstream manifests at a pinned tag. In a real setup, vendor these
 # as a snapshot so upstream changes don't break sync.
 resources:
-  - https://github.com/GoogleCloudPlatform/microservices-demo/release/kubernetes-manifests.yaml?ref=v0.10.2
+  - kubernetes-manifests.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: online-boutique
-  managed-by: argocd
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: online-boutique
+      managed-by: argocd
+    includeSelectors: false
