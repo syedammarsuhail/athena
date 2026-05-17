@@ -54,6 +54,7 @@ spec:
           readinessProbe: { httpGet: { path: /healthz, port: 8080 } }
           securityContext:
             runAsNonRoot: true
+            runAsUser: 10001
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
@@ -81,6 +82,7 @@ spec:
           ports: [{ containerPort: 8080 }]
           securityContext:
             runAsNonRoot: true
+            runAsUser: 10001
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
@@ -112,6 +114,7 @@ spec:
           ports: [{ containerPort: 8080 }]
           securityContext:
             runAsNonRoot: true
+            runAsUser: 10001
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
