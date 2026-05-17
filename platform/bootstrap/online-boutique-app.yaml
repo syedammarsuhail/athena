@@ -6,8 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGEME/athena.git
-    targetRevision: main
+    repoURL: https://github.com/syedammarsuhail/athena.git
+    targetRevision: master
     path: workloads/online-boutique/overlays/dev
   destination:
     server: https://kubernetes.default.svc

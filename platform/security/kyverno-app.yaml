@@ -34,8 +34,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGEME/athena.git
-    targetRevision: main
+    repoURL: https://github.com/syedammarsuhail/athena.git
+    targetRevision: master
     path: platform/security/kyverno-policies
   destination:
     server: https://kubernetes.default.svc

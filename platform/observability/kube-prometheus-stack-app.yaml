@@ -27,7 +27,7 @@ spec:
                   accessModes: [ReadWriteOnce]
                   resources: { requests: { storage: 50Gi } }
         grafana:
-          adminPassword: CHANGEME-use-external-secret
+          adminPassword: Athena@2026!
           ingress:
             enabled: true
             ingressClassName: nginx

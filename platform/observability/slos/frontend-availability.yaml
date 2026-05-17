@@ -24,7 +24,7 @@ spec:
         name: FrontendAvailabilitySLO
         labels: { severity: critical, slo: frontend-availability }
         annotations:
-          runbook_url: https://github.com/CHANGEME/athena/blob/main/docs/runbooks/frontend.md
+          runbook_url: https://github.com/syedammarsuhail/athena/blob/master/docs/runbooks/frontend.md
         page_alert:   { labels: { severity: critical } }
         ticket_alert: { labels: { severity: warning  } }
     - name: requests-latency

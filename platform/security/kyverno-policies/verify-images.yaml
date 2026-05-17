@@ -18,5 +18,5 @@ spec:
           attestors:
             - entries:
                 - keyless:
-                    subject: "https://github.com/CHANGEME/athena/.github/workflows/build.yml@refs/heads/main"
+                    subject: "https://github.com/syedammarsuhail/athena/.github/workflows/build.yml@refs/heads/master"
                     issuer: "https://token.actions.githubusercontent.com"
