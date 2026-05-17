@@ -86,7 +86,7 @@ jobs:
             k8s-mcp)      echo "path=agent/mcp-servers/k8s-mcp"     >> $GITHUB_OUTPUT ;;
           esac
           IMAGE="${{ steps.ecr.outputs.registry }}/athena/${{ matrix.component }}"
-          TAG="${GITHUB_SHA::12}"
+          TAG="${GITHUB_SHA::12}-${{ github.run_number }}"
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
           echo "tag=$TAG"     >> $GITHUB_OUTPUT
 
