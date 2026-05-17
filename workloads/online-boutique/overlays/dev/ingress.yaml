@@ -3,15 +3,11 @@ kind: Ingress
 metadata:
   name: boutique
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts: [shop.example.com]
-      secretName: boutique-tls
   rules:
-    - host: shop.example.com
+    - host: ad58e025866664786880c0f534ad19c9-13f24d868752b761.elb.us-east-1.amazonaws.com
       http:
         paths:
           - path: /
