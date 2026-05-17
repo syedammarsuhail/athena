@@ -279,6 +279,7 @@ spec:
             limits:   { cpu: 1,    memory: 1Gi }
           securityContext:
             runAsNonRoot: true
+            runAsUser: 10001
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
@@ -305,6 +306,7 @@ spec:
           ports: [{ containerPort: 8000 }]
           securityContext:
             runAsNonRoot: true
+            runAsUser: 10001
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
