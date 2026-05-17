@@ -12,6 +12,10 @@ spec:
     helm:
       values: |
         persistence: { enabled: true, size: 20Gi }
+        securityContext:
+          fsGroup: 10001
+          runAsUser: 10001
+          runAsGroup: 10001
         tempo:
           metricsGenerator:
             enabled: true
