@@ -42,16 +42,5 @@ resource "aws_ecr_repository" "this" {
   image_scanning_configuration { scan_on_push = true }
 }
 
-# Argo CD — installed via Helm so we can manage version in code
-resource "helm_release" "argocd" {
-  name             = "argocd"
-  namespace        = "argocd"
-  create_namespace = true
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  version          = "7.4.0"
-
-  values = [file("${path.module}/values/argocd-values.yaml")]
-
-  depends_on = [module.eks]
-}
+# NOTE: Argo CD is installed via kubectl after the cluster is up.
+# See the README or docs/runbooks/demos.md for the bootstrap commands.
