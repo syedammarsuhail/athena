@@ -1,7 +1,7 @@
 variable "cluster_name" { type = string }
 variable "cluster_version" {
   type    = string
-  default = "1.30"
+  default = "1.32"
 }
 variable "vpc_id" { type = string }
 variable "subnet_ids" { type = list(string) }
@@ -15,6 +15,14 @@ variable "node_groups" {
     max_size       = number
   }))
 }
+
+variable "admin_arns" {
+  type        = list(string)
+  description = "IAM principal ARNs to grant cluster-admin via EKS access entries"
+  default     = []
+}
+
+data "aws_caller_identity" "current" {}
 
 # -- IAM role for the EKS control plane --
 data "aws_iam_policy_document" "cluster_assume" {
@@ -49,9 +57,33 @@ resource "aws_eks_cluster" "this" {
     endpoint_public_access  = true
   }
 
+  # Enable API + ConfigMap auth so access entries work
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   depends_on = [aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy]
+}
+
+# -- Open ports 80 + 443 on the cluster security group (for NLB ingress) --
+resource "aws_security_group_rule" "http_ingress" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}
+
+resource "aws_security_group_rule" "https_ingress" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
 
 # -- OIDC provider for IRSA --
@@ -123,8 +155,65 @@ resource "aws_eks_addon" "core" {
   depends_on   = [aws_eks_node_group.this]
 }
 
+# -- EBS CSI driver addon with Pod Identity IAM role --
+resource "aws_iam_role" "ebs_csi" {
+  name = "${var.cluster_name}-ebs-csi-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "pods.eks.amazonaws.com" }
+      Action    = ["sts:AssumeRole", "sts:TagSession"]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "aws-ebs-csi-driver"
+  depends_on   = [aws_eks_node_group.this, aws_iam_role_policy_attachment.ebs_csi]
+}
+
+resource "aws_eks_pod_identity_association" "ebs_csi" {
+  cluster_name    = aws_eks_cluster.this.name
+  namespace       = "kube-system"
+  service_account = "ebs-csi-controller-sa"
+  role_arn        = aws_iam_role.ebs_csi.arn
+  depends_on      = [aws_eks_addon.ebs_csi]
+}
+
+# -- Access entries: grant cluster-admin to caller + any extra ARNs --
+locals {
+  admin_arns = distinct(concat(
+    ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"],
+    var.admin_arns
+  ))
+}
+
+resource "aws_eks_access_entry" "admin" {
+  for_each      = toset(local.admin_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value
+  depends_on    = [aws_eks_cluster.this]
+}
+
+resource "aws_eks_access_policy_association" "admin" {
+  for_each      = toset(local.admin_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope { type = "cluster" }
+  depends_on = [aws_eks_access_entry.admin]
+}
+
 output "cluster_name" { value = aws_eks_cluster.this.name }
 output "cluster_endpoint" { value = aws_eks_cluster.this.endpoint }
 output "cluster_ca" { value = aws_eks_cluster.this.certificate_authority[0].data }
 output "oidc_provider_arn" { value = aws_iam_openid_connect_provider.oidc.arn }
 output "oidc_provider_url" { value = aws_iam_openid_connect_provider.oidc.url }
+output "cluster_security_group_id" { value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id }

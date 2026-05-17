@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/syedammarsuhail/athena.git
+    targetRevision: master
+    path: platform/bootstrap/storage
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
