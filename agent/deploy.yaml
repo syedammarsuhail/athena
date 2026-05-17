@@ -233,7 +233,7 @@ spec:
       containers:
         - name: opa
           image: openpolicyagent/opa:0.66.0
-          args: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+          args: ["run", "--server", "--addr=0.0.0.0:8181", "/policies/tools.rego"]
           volumeMounts: [{ name: policies, mountPath: /policies }]
           ports: [{ containerPort: 8181 }]
       volumes:
