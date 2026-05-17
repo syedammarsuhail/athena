@@ -12,3 +12,11 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
+  # frontend requires this env var even when the assistant feature is disabled
+  - target: { kind: Deployment, name: frontend }
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SHOPPING_ASSISTANT_SERVICE_ADDR
+          value: "shoppingassistantservice:80"
