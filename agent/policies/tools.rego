@@ -47,8 +47,7 @@ decision := {"allow": false, "reason": sprintf("scale request %d exceeds 2× cur
 
 decision := {"allow": true, "reason": "rollback of a recent change is allowed (HITL still required)"} if {
     input.tool == "k8s.rollback_argocd_app"
-    input.args.app_name == allowed_app
-    allowed_app := app_allowed[_]
+    app_allowed[input.args.app_name]
 }
 
 decision := {"allow": false, "reason": "rollback of unknown app refused"} if {

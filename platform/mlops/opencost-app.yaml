@@ -23,15 +23,7 @@ spec:
               namespaceName: monitoring
               port: 9090
           ui:
-            enabled: true
-            ingress:
-              enabled: true
-              ingressClassName: nginx
-              annotations: { cert-manager.io/cluster-issuer: letsencrypt-prod }
-              hosts:
-                - host: cost.example.com
-                  paths: [{ path: /, pathType: Prefix }]
-              tls: [{ secretName: opencost-tls, hosts: [cost.example.com] }]
+            enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: opencost
