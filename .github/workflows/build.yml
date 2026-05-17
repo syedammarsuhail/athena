@@ -123,6 +123,6 @@ jobs:
           git add kustomization.yaml
           git diff --cached --quiet && exit 0
 
-          git pull --rebase origin master
           git commit -m "ci: bump athena/${{ matrix.component }} to ${{ steps.ctx.outputs.tag }} [skip ci]"
+          git pull --rebase origin master
           git push origin master
