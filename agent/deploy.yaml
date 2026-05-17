@@ -312,3 +312,4 @@ metadata: { name: slack-bot, namespace: agent }
 spec:
   selector: { app: slack-bot }
   ports: [{ port: 8000, targetPort: 8000 }]
+
