@@ -14,7 +14,7 @@ images:
   newTag: c993b38e941a-26
 - name: athena/loki-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/loki-mcp
-  newTag: latest
+  newTag: c993b38e941a-25
 - name: athena/prom-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/prom-mcp
   newTag: latest
