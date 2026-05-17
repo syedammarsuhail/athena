@@ -22,17 +22,3 @@ spec:
     namespace: kube-system
   syncPolicy:
     automated: { prune: true, selfHeal: true }
----
-# Apply Off policies so VPA only RECOMMENDS, doesn't restart pods
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: cartservice
-  namespace: online-boutique
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: cartservice
-  updatePolicy:
-    updateMode: "Off"
