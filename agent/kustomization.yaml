@@ -8,7 +8,7 @@ resources:
 images:
 - name: athena/agent
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/agent
-  newTag: 7ceadb5db16c
+  newTag: 039c0100e03a-36
 - name: athena/k8s-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/k8s-mcp
   newTag: 92641c8a51fc-34
