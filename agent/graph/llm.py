@@ -27,9 +27,9 @@ else:
     )
 
 MODEL = os.getenv("AGENT_MODEL", "claude-opus-4-7")
-# Bedrock uses different model IDs
+# Bedrock uses cross-region inference profile IDs
 if isinstance(_client, anthropic.AnthropicBedrock):
-    MODEL = os.getenv("AGENT_MODEL", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+    MODEL = os.getenv("AGENT_MODEL", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 
 
 def chat(*, node: str, system: str, messages: list[dict], tools: list[dict] | None = None,
