@@ -14,4 +14,7 @@ variable "domain_name" {
   type    = string
   default = "example.com"
 }
-variable "letsencrypt_email" { type = string }
+variable "letsencrypt_email" {
+  type    = string
+  default = "ammarsuhail155@gmail.com"
+}
