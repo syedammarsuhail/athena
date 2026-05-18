@@ -17,4 +17,4 @@ images:
   newTag: 92641c8a51fc-33
 - name: athena/prom-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/prom-mcp
-  newTag: b39ca9b68fc1-35
+  newTag: a3eccd92eeae-42
