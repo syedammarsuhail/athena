@@ -26,13 +26,13 @@ MAX_STEPS = 8
 
 READ_TOOLS = [
     {
-        "name": "prom.query_instant",
+        "name": "prom_query_instant",
         "description": "Run an instant PromQL query. Use for current-state checks.",
         "input_schema": {"type": "object", "properties": {
             "query": {"type": "string"}}, "required": ["query"]},
     },
     {
-        "name": "prom.query_range",
+        "name": "prom_query_range",
         "description": "Run a range PromQL query. Use for trends over time.",
         "input_schema": {"type": "object", "properties": {
             "query": {"type": "string"},
@@ -41,7 +41,7 @@ READ_TOOLS = [
         }, "required": ["query"]},
     },
     {
-        "name": "loki.query_logs",
+        "name": "loki_query_logs",
         "description": "LogQL query. Pull recent logs for a service or pattern.",
         "input_schema": {"type": "object", "properties": {
             "query": {"type": "string"},
@@ -50,7 +50,7 @@ READ_TOOLS = [
         }, "required": ["query"]},
     },
     {
-        "name": "k8s.get_events",
+        "name": "k8s_get_events",
         "description": "Recent Kubernetes events for a namespace, optionally filtered.",
         "input_schema": {"type": "object", "properties": {
             "namespace": {"type": "string"},
@@ -58,7 +58,7 @@ READ_TOOLS = [
         }, "required": ["namespace"]},
     },
     {
-        "name": "k8s.describe_deployment",
+        "name": "k8s_describe_deployment",
         "description": "Full description of a deployment, including conditions and recent ReplicaSets.",
         "input_schema": {"type": "object", "properties": {
             "namespace": {"type": "string"},

@@ -23,14 +23,14 @@ LOKI_MCP = os.getenv("LOKI_MCP", "http://loki-mcp.agent:8080")
 K8S_MCP  = os.getenv("K8S_MCP",  "http://k8s-mcp.agent:8080")
 
 TOOL_CALLS = Counter("agent_tool_calls_total", "tool calls", ["tool", "result"])
-WRITE_TOOLS = {"k8s.restart_deployment", "k8s.scale_deployment",
-               "k8s.rollback_argocd_app", "k8s.cordon_node"}
+WRITE_TOOLS = {"k8s_restart_deployment", "k8s_scale_deployment",
+               "k8s_rollback_argocd_app", "k8s_cordon_node"}
 
 
 def _route(tool: str) -> str:
-    if tool.startswith("prom."): return PROM_MCP
-    if tool.startswith("loki."): return LOKI_MCP
-    if tool.startswith("k8s."):  return K8S_MCP
+    if tool.startswith("prom_"): return PROM_MCP
+    if tool.startswith("loki_"): return LOKI_MCP
+    if tool.startswith("k8s_"):  return K8S_MCP
     raise ValueError(f"unknown tool namespace: {tool}")
 
 
@@ -63,7 +63,7 @@ def call(tool: str, args: dict, node: str) -> ToolCall:
                 success=False, policy_decision=decision,
             )
 
-    url = f"{_route(tool)}/tools/{tool.split('.', 1)[1]}"
+    url = f"{_route(tool)}/tools/{tool.split('_', 1)[1]}"
     try:
         r = httpx.post(url, json=args, timeout=30)
         r.raise_for_status()

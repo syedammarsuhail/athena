@@ -16,10 +16,10 @@ log = logging.getLogger(__name__)
 
 # Maps plan.action to the actual MCP tool name + required arg keys.
 ACTION_TO_TOOL = {
-    "restart_deployment":  ("k8s.restart_deployment",  ("namespace", "name")),
-    "scale_deployment":    ("k8s.scale_deployment",    ("namespace", "name", "replicas")),
-    "rollback_argocd_app": ("k8s.rollback_argocd_app", ("app_name", "revision")),
-    "cordon_node":         ("k8s.cordon_node",         ("node_name",)),
+    "restart_deployment":  ("k8s_restart_deployment",  ("namespace", "name")),
+    "scale_deployment":    ("k8s_scale_deployment",    ("namespace", "name", "replicas")),
+    "rollback_argocd_app": ("k8s_rollback_argocd_app", ("app_name", "revision")),
+    "cordon_node":         ("k8s_cordon_node",         ("node_name",)),
 }
 
 
