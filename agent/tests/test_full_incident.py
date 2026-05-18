@@ -129,9 +129,9 @@ def fake_mcp_call(tool, args, node):
     """Canned tool results — pretend the cluster is healthy after the restart."""
     success = True
     summary = "[]"
-    if tool == "k8s.restart_deployment":
+    if tool == "k8s_restart_deployment":
         summary = '{"restarted": "online-boutique/cartservice"}'
-    elif tool == "prom.query_instant":
+    elif tool == "prom_query_instant":
         summary = '{"result": []}'  # nothing anomalous on re-query
     return ToolCall(
         ts=time.time(), node=node, tool=tool, args=args,
@@ -185,7 +185,7 @@ def test_policy_denial_recorded(monkeypatch):
     monkeypatch.setattr("agent.graph.nodes.verifier.SETTLE_SECONDS", 0)
 
     def mcp_with_denial(tool, args, node):
-        if tool == "k8s.restart_deployment":
+        if tool == "k8s_restart_deployment":
             return ToolCall(ts=time.time(), node=node, tool=tool, args=args,
                             result_summary="DENIED by policy: cooldown",
                             success=False, policy_decision="deny: cooldown")

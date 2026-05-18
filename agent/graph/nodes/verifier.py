@@ -29,17 +29,17 @@ def verify(state: IncidentState) -> dict:
             f'{{namespace="{event.namespace}",pod=~"{event.service}.*"}}'
             f'[{LOOKBACK_MIN}m])'
         )
-        tc = mcp_client.call("prom.query_instant", {"query": query}, node="verify")
+        tc = mcp_client.call("prom_query_instant", {"query": query}, node="verify")
     elif event.kind == "log_anomaly":
         # check whether the same template is still firing
         tc = mcp_client.call(
-            "loki.query_logs",
+            "loki_query_logs",
             {"query": f'{{namespace="{event.namespace}"}}', "minutes_back": LOOKBACK_MIN},
             node="verify",
         )
     else:
         tc = mcp_client.call(
-            "prom.query_instant",
+            "prom_query_instant",
             {"query": f'ALERTS{{alertname="{event.raw.get("alertname","")}"}}'},
             node="verify",
         )
