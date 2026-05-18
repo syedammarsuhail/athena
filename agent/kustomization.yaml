@@ -11,7 +11,7 @@ images:
   newTag: a3eccd92eeae-42
 - name: athena/k8s-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/k8s-mcp
-  newTag: 92641c8a51fc-34
+  newTag: a3eccd92eeae-42
 - name: athena/loki-mcp
   newName: 339713148266.dkr.ecr.us-east-1.amazonaws.com/athena/loki-mcp
   newTag: a3eccd92eeae-42
