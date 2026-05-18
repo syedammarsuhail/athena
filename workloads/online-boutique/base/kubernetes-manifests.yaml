@@ -533,10 +533,10 @@ spec:
         resources:
           requests:
             cpu: 200m
-            memory: 64Mi
+            memory: 900Mi
           limits:
             cpu: 300m
-            memory: 128Mi
+            memory: 1.5Gi
         readinessProbe:
           initialDelaySeconds: 15
           grpc:
