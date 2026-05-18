@@ -257,6 +257,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9000"
     spec:
+      serviceAccountName: athena-agent
       containers:
         - name: agent
           image: athena/agent:latest
@@ -268,8 +269,9 @@ spec:
             - { name: K8S_MCP,  value: "http://k8s-mcp.agent:8080" }
             - { name: REDIS_URL, value: "redis://redis.agent:6379/0" }
             - { name: SLACK_BOT_API, value: "http://slack-bot.agent:8000" }
+            - { name: AWS_REGION, value: "us-east-1" }
             - name: ANTHROPIC_API_KEY
-              valueFrom: { secretKeyRef: { name: anthropic, key: api-key } }
+              valueFrom: { secretKeyRef: { name: anthropic, key: api-key, optional: true } }
           ports: [{ containerPort: 9000, name: metrics }]
           resources:
             requests: { cpu: 200m, memory: 512Mi }

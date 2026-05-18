@@ -18,8 +18,18 @@ LLM_TOKENS = Counter("agent_llm_tokens_total", "tokens", ["node", "model", "kind
 LLM_LATENCY = Histogram("agent_llm_seconds", "LLM call latency", ["node", "model"])
 LLM_CALLS = Counter("agent_llm_calls_total", "LLM calls", ["node", "model", "result"])
 
-_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Use Bedrock if no direct API key is set
+if os.getenv("ANTHROPIC_API_KEY"):
+    _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+else:
+    _client = anthropic.AnthropicBedrock(
+        aws_region=os.getenv("AWS_REGION", "us-east-1"),
+    )
+
 MODEL = os.getenv("AGENT_MODEL", "claude-opus-4-7")
+# Bedrock uses different model IDs
+if isinstance(_client, anthropic.AnthropicBedrock):
+    MODEL = os.getenv("AGENT_MODEL", "anthropic.claude-3-5-sonnet-20241022-v2:0")
 
 
 def chat(*, node: str, system: str, messages: list[dict], tools: list[dict] | None = None,
