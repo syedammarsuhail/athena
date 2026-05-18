@@ -14,10 +14,10 @@ on:
   workflow_dispatch:
     inputs:
       component:
-        description: 'Which component to build'
+        description: 'Which component to build (or "all" to build everything)'
         required: true
         type: choice
-        options: [agent, ml-isoforest, ml-drain3, prom-mcp, loki-mcp, k8s-mcp]
+        options: [all, agent, ml-isoforest, ml-drain3, prom-mcp, loki-mcp, k8s-mcp]
 
 permissions:
   id-token: write   # OIDC for AWS
@@ -37,7 +37,11 @@ jobs:
       - id: set
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "components=[\"${{ inputs.component }}\"]" >> $GITHUB_OUTPUT
+            if [[ "${{ inputs.component }}" == "all" ]]; then
+              echo 'components=["agent","prom-mcp","loki-mcp","k8s-mcp"]' >> $GITHUB_OUTPUT
+            else
+              echo "components=[\"${{ inputs.component }}\"]" >> $GITHUB_OUTPUT
+            fi
           else
             CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null || git diff --name-only HEAD~1)
             COMPS=()
