@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: falco
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://falcosecurity.github.io/charts
+    chart: falco
+    targetRevision: 4.8.2
+    helm:
+      values: |
+        driver:
+          kind: modern_ebpf
+        falcosidekick:
+          enabled: true
+          config:
+            slack:
+              webhookurl: $SLACK_URL
+              minimumpriority: warning
+            loki:
+              hostport: http://loki-gateway.monitoring.svc:80
+              endpoint: /loki/api/v1/push
+              minimumpriority: notice
+        falco:
+          json_output: true
+          rules_file:
+            - /etc/falco/falco_rules.yaml
+            - /etc/falco/k8s_audit_rules.yaml
+            - /etc/falco/rules.d
+        customRules:
+          athena-rules.yaml: |
+            - rule: Unexpected Outbound Connection in Boutique
+              desc: Detect any outbound connection from online-boutique pods to non-internal IPs
+              condition: >
+                outbound and k8s.ns.name=online-boutique
+                and not fd.sip in (rfc1918_addresses)
+                and not fd.sip in (k8s_service_cidr)
+              output: >
+                Unexpected outbound from boutique pod (ns=%k8s.ns.name pod=%k8s.pod.name
+                proc=%proc.name dest=%fd.sip:%fd.sport)
+              priority: WARNING
+              tags: [network, athena]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: falco
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

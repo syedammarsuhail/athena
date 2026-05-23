@@ -1,0 +1,17 @@
+FROM python:3.12-slim AS builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ git && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+FROM python:3.12-slim AS runtime
+ARG USER_UID=10001
+RUN useradd -u $USER_UID -m -s /usr/sbin/nologin app
+WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY serve.py drain3.ini ./
+# Warm the sentence-transformer model cache so we don't download at runtime
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+USER app
+ENV PYTHONUNBUFFERED=1
+CMD ["python", "serve.py"]

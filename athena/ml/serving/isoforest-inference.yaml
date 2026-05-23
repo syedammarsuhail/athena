@@ -1,0 +1,61 @@
+# Wrapped as a plain Deployment instead of KServe InferenceService for simplicity.
+# (Switch to KServe `InferenceService` once you've added an Istio ingressgateway.)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: isoforest
+  namespace: mlops
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: isoforest } }
+  template:
+    metadata:
+      labels: { app: isoforest }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccountName: isoforest
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: serve
+          image: <ECR>/athena/ml-isoforest:<TAG>
+          env:
+            - { name: MLFLOW_TRACKING_URI, value: "http://mlflow.mlops:5000" }
+            - { name: MODEL_REFRESH_SECONDS, value: "900" }
+          ports: [{ containerPort: 8080 }]
+          resources:
+            requests: { cpu: 300m, memory: 512Mi }
+            limits:   { cpu: 1500m, memory: 2Gi }
+          livenessProbe: { httpGet: { path: /healthz, port: 8080 }, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /readyz, port: 8080 }, periodSeconds: 5 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: isoforest
+  namespace: mlops
+spec:
+  selector: { app: isoforest }
+  ports: [{ port: 80, targetPort: 8080 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: isoforest
+  namespace: mlops
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: isoforest }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

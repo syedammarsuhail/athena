@@ -1,0 +1,22 @@
+# App-of-apps pattern: this single Application points Argo at platform/
+# Argo discovers every Application manifest under there and reconciles them all.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/syedammarsuhail/athena.git
+    targetRevision: master
+    path: platform
+    directory:
+      recurse: true
+      include: '*-app.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

@@ -1,0 +1,40 @@
+# Sloth converts this to multi-window, multi-burn-rate Prometheus alerts.
+# Apply: kubectl apply -f frontend-availability.yaml
+# Sloth controller (or sloth CLI) generates the rules.
+apiVersion: sloth.slok.dev/v1
+kind: PrometheusServiceLevel
+metadata:
+  name: frontend-availability
+  namespace: monitoring
+spec:
+  service: frontend
+  labels:
+    team: platform
+  slos:
+    - name: requests-availability
+      objective: 99.5
+      description: "99.5% of frontend HTTP requests are successful (non-5xx) over 28d"
+      sli:
+        events:
+          errorQuery: |
+            sum(rate(nginx_ingress_controller_requests{namespace="online-boutique",service="frontend",status=~"5.."}[{{.window}}]))
+          totalQuery: |
+            sum(rate(nginx_ingress_controller_requests{namespace="online-boutique",service="frontend"}[{{.window}}]))
+      alerting:
+        name: FrontendAvailabilitySLO
+        labels: { severity: critical, slo: frontend-availability }
+        annotations:
+          runbook_url: https://github.com/syedammarsuhail/athena/blob/master/docs/runbooks/frontend.md
+        page_alert:   { labels: { severity: critical } }
+        ticket_alert: { labels: { severity: warning  } }
+    - name: requests-latency
+      objective: 99.0
+      description: "99% of frontend requests served under 500ms over 28d"
+      sli:
+        events:
+          errorQuery: |
+            sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{namespace="online-boutique",service="frontend",le="0.5"}[{{.window}}]))
+            -
+            sum(rate(nginx_ingress_controller_request_duration_seconds_count{namespace="online-boutique",service="frontend"}[{{.window}}]))
+          totalQuery: |
+            sum(rate(nginx_ingress_controller_request_duration_seconds_count{namespace="online-boutique",service="frontend"}[{{.window}}]))

@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kyverno.github.io/kyverno
+    chart: kyverno
+    targetRevision: 3.2.6
+    helm:
+      values: |
+        admissionController:
+          replicas: 3
+          resources:
+            limits: { cpu: 1, memory: 1Gi }
+        backgroundController:
+          resources:
+            limits: { cpu: 1, memory: 512Mi }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
+---
+# Policies live alongside the controller
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/syedammarsuhail/athena.git
+    targetRevision: master
+    path: platform/security/kyverno-policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy: { automated: { prune: true, selfHeal: true } }

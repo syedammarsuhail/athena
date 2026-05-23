@@ -1,0 +1,33 @@
+# Core
+anthropic[bedrock]==0.34.2
+openai>=1.35.0
+boto3>=1.34.0
+langgraph==0.2.34
+pydantic==2.9.2
+typing-extensions==4.12.2
+
+# Messaging + storage
+nats-py==2.9.0
+redis==5.1.1
+httpx==0.27.2
+
+# Serving (used by slack_bot)
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Observability
+prometheus-client==0.21.0
+structlog==24.4.0
+
+# OpenTelemetry — traces every graph node + LLM call + tool call
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-exporter-otlp-proto-grpc==1.27.0
+
+# Datadog APM — alternative backend (set DD_API_KEY to activate)
+ddtrace==2.13.0
+
+# Dev / test
+pytest==8.3.3
+pytest-asyncio==0.24.0
+respx==0.21.1

@@ -1,0 +1,32 @@
+global:
+  domain: argocd.example.com
+
+configs:
+  params:
+    server.insecure: true  # behind ingress with TLS termination
+  cm:
+    timeout.reconciliation: 60s
+    application.instanceLabelKey: argocd.argoproj.io/instance
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - argocd.example.com
+    tls:
+      - secretName: argocd-tls
+        hosts: [argocd.example.com]
+
+controller:
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+
+repoServer:
+  replicas: 2
+
+applicationSet:
+  replicas: 2

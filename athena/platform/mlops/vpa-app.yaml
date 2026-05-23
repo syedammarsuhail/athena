@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vpa
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://cowboysysop.github.io/charts
+    chart: vertical-pod-autoscaler
+    targetRevision: 9.8.4
+    helm:
+      values: |
+        updater:
+          extraArgs:
+            - --updater-interval=30m
+        recommender:
+          extraArgs:
+            - --recommender-interval=10m
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

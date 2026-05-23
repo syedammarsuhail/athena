@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.datadoghq.com
+    chart: datadog
+    targetRevision: 3.69.0
+    helm:
+      values: |
+        datadog:
+          apiKeyExistingSecret: datadog-secret
+          site: datadoghq.com
+          clusterName: athena-dev
+
+          # APM — distributed tracing across all services
+          apm:
+            portEnabled: true
+            enabled: true
+
+          # Logs — collect from all containers
+          logs:
+            enabled: true
+            containerCollectAll: true
+
+          # Kubernetes state metrics
+          kubeStateMetricsEnabled: true
+          kubeStateMetricsCore:
+            enabled: true
+
+          # Process monitoring (shows what's running inside pods)
+          processAgent:
+            enabled: true
+            processCollection: true
+
+          # Service Map — auto-discovers dependencies
+          serviceTopology:
+            enabled: true
+
+        # DaemonSet — one agent per node
+        agents:
+          useHostNetwork: true
+
+        # Cluster Agent — aggregates cluster-level metrics
+        clusterAgent:
+          enabled: true
+          replicas: 1
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

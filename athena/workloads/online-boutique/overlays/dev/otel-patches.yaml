@@ -1,0 +1,215 @@
+# OpenTelemetry patches for Online Boutique
+#
+# Online Boutique v0.10.x has OTel SDK built in to every service.
+# These env vars activate it — no code changes needed.
+#
+# How it works:
+#   Each service sends traces to the OTel Collector (running as DaemonSet)
+#   Collector routes to Tempo → visible in Grafana Explore
+#
+# Pattern used by Uber, Shopify, and Google internally:
+#   inject OTEL config via env vars, never bake it into the image
+
+# ── Step 1: inject collector endpoint into ALL deployments ──────────────────
+# The OTel Collector runs in the observability namespace and is reachable
+# cluster-wide via this DNS name.
+
+- target:
+    kind: Deployment
+    name: frontend
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "frontend"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: cartservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "cartservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: checkoutservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "checkoutservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: productcatalogservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "productcatalogservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: currencyservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "currencyservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: paymentservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "paymentservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: shippingservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "shippingservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: emailservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "emailservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: recommendationservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "recommendationservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"
+
+- target:
+    kind: Deployment
+    name: adservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_SERVICE_NAME
+        value: "adservice"
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value:
+        name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace=online-boutique,deployment.environment=dev"

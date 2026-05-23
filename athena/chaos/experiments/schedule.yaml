@@ -1,0 +1,39 @@
+# Master schedule for game-day chaos runs (stage only)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: weekly-game-day
+  namespace: chaos-mesh
+spec:
+  entry: game-day
+  templates:
+    - name: game-day
+      templateType: Serial
+      deadline: 45m
+      children: [warmup, leak, delay, recover]
+    - name: warmup
+      templateType: Suspend
+      deadline: 30s
+    - name: leak
+      templateType: StressChaos
+      deadline: 10m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces: [online-boutique]
+          labelSelectors: { app: cartservice }
+        stressors:
+          memory: { workers: 1, size: 800MB }
+    - name: delay
+      templateType: NetworkChaos
+      deadline: 10m
+      networkChaos:
+        action: delay
+        mode: all
+        selector:
+          namespaces: [online-boutique]
+          labelSelectors: { app: frontend }
+        delay: { latency: "200ms" }
+    - name: recover
+      templateType: Suspend
+      deadline: 5m

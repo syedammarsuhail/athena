@@ -1,0 +1,212 @@
+# Datadog APM patches for Online Boutique
+#
+# Activates Datadog distributed tracing in all 10 services.
+# No code changes — just env vars (same pattern as OTel patches).
+#
+# Unified tagging: DD_ENV + DD_SERVICE + DD_VERSION
+# lets Datadog correlate metrics, traces, and logs automatically.
+#
+# What you see in Datadog after applying:
+#   APM → Service Map: visual graph of all service dependencies
+#   APM → Traces: full request waterfall frontend→cart→payment
+#   Logs: searchable, linked to traces via trace_id
+
+- target:
+    kind: Deployment
+    name: frontend
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "frontend" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: cartservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "cartservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: checkoutservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "checkoutservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: productcatalogservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "productcatalogservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: paymentservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "paymentservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: currencyservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "currencyservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: shippingservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "shippingservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: emailservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "emailservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: recommendationservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "recommendationservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }
+
+- target:
+    kind: Deployment
+    name: adservice
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_ENV, value: "dev" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_SERVICE, value: "adservice" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_VERSION, value: "v0.10.2" }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_AGENT_HOST, valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+    - op: add
+      path: /spec/template/spec/containers/0/env/-
+      value: { name: DD_TRACE_AGENT_PORT, value: "8126" }

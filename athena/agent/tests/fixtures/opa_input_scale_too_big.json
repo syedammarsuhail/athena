@@ -1,0 +1,4 @@
+{
+  "tool": "k8s.scale_deployment",
+  "args": { "namespace": "online-boutique", "name": "frontend", "replicas": 50, "current_replicas": 5 }
+}
